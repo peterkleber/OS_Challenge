@@ -34,6 +34,7 @@ typedef struct{
 	Rotation_t Mode ;
 	Status_t Status ;
 	uint8 Priority; //0 is the max priority
+	uint16 Task_Counter;
 }ST_Task_Info;
 
 EnmOSError_t OS_Init (const OS_ConfigType * ConfigPtr );
