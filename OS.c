@@ -14,10 +14,14 @@ static uint8 OS_init_flag = 0;
 volatile uint16 OS_Tick_Count = 0;
 volatile uint8 ISR_Generated_Flag = 0;
 static uint8 System_Tick_Count = 0 ;
-static sint16 Max_Run_Time = -1;
+static uint16 Max_Run_Time = 0;
 static uint8 Timer_Select ;	//any value except 0,1,2
 
 
+ST_Task_Info Task_Buffer[BUFFER_SIZE];
+
+static void Null_func() {
+}
 
 
 //Call back function for the ISR to set the flag
@@ -35,6 +39,7 @@ void CPU_Sleep (void)
 
 EnmOSError_t OS_Init(const OS_ConfigType *ConfigPtr) 
 {
+	PORTB ^= (1<<PB7);
 	Timer_Select = ConfigPtr->timer;
 	if (OS_init_flag == 0) 
 	{
@@ -43,7 +48,7 @@ EnmOSError_t OS_Init(const OS_ConfigType *ConfigPtr)
 			//Initialize the buffer
 			for (uint8 i = 0; i < BUFFER_SIZE; i++) 
 			{
-				Task_Buffer[i].Ptr = NULL_PTR;
+				Task_Buffer[i].Ptr = Null_func;
 				Task_Buffer[i].Run_Time = 0;
 				Task_Buffer[i].Mode = NO_MODE;     //Outside the enum values
 				Task_Buffer[i].Status = Idle;
@@ -71,7 +76,8 @@ EnmOSError_t OS_Init(const OS_ConfigType *ConfigPtr)
 	return OS_OK;
 }
 
-// feh haga fe accessing beta3 el incoming task info 
+/*
+// feh haga fe accessing beta3 el incoming task info
 EnmOSError_t OS_Create_Task(const ST_Task_Info *ST_Incoming_Task_Info)
 {
 	if (OS_init_flag == 1)
@@ -79,7 +85,7 @@ EnmOSError_t OS_Create_Task(const ST_Task_Info *ST_Incoming_Task_Info)
 		PORTB |= (1<<PB0);
 		if (Task_Buffer->Ptr == NULL_PTR)
 		{
-			PORTB |= (1<<PB1);			
+			PORTB |= (1<<PB1);
 			if (Buffer_ptr < BUFFER_SIZE)
 			{
 				PORTB |= (1<<PB2);
@@ -99,6 +105,39 @@ EnmOSError_t OS_Create_Task(const ST_Task_Info *ST_Incoming_Task_Info)
 			}
 		}
 
+	}
+	return OS_OK;
+}
+*/
+
+
+// feh haga fe accessing beta3 el incoming task info 
+EnmOSError_t OS_Create_Task( void (*Ptr) (void) , uint16 Run_Time , Rotation_t Mode ,  Status_t Status ,uint8 Priority )
+{
+	if (OS_init_flag == 1)
+	{
+		PORTB ^= (1<<PB0);
+		if (Task_Buffer->Ptr != NULL_PTR)
+		{
+			PORTB ^= (1<<PB1);			
+			if (Buffer_ptr < BUFFER_SIZE)
+			{
+				PORTB ^= (1<<PB2);
+				Task_Buffer[Buffer_ptr].Ptr = Ptr;
+				Task_Buffer[Buffer_ptr].Mode = Mode;
+				Task_Buffer[Buffer_ptr].Run_Time = Run_Time;
+				Task_Buffer[Buffer_ptr].Status = Status;
+				Task_Buffer[Buffer_ptr].Priority = Priority;
+				
+				if(Max_Run_Time < Task_Buffer[Buffer_ptr].Run_Time)
+				{
+					PORTB ^= (1<<PB3);
+					Max_Run_Time = Task_Buffer[Buffer_ptr].Run_Time;
+				}
+				
+				Buffer_ptr++;		
+			}
+		}
 	}
 	return OS_OK;
 }
@@ -149,8 +188,6 @@ while(1)
 						Ptr_to_excute();
 
 						Task_Buffer[Highest_Priority_Index].Status = Running;
-						Task_Buffer[i].Status = Running;
-
 
 						if (Task_Buffer[Highest_Priority_Index].Mode == ONE_SHOT)
 						{
@@ -175,7 +212,7 @@ while(1)
 	}
 }
 	// CPU_SLeep_Function Should be here
-	CPU_Sleep ();
+	//CPU_Sleep ();
 }// end of while (1)
 
 }// end of the OS_Run Function
