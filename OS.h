@@ -12,12 +12,12 @@
 #include"std_types.h"
 #include "Timer.h"
 #include "OS_cnfg.h"
-#include "LCD.h"
+//#include "LCD.h"
 
 
 #define BUFFER_SIZE ((uint8)3)
 
-typedef enum {Ready,Running,DELETED,Idle}Status_t;
+typedef enum {Ready,Running,Waiting,Deleted,Idle}Status_t;
 
 typedef enum {
  PERIODIC, ONE_SHOT,NO_MODE
@@ -39,13 +39,10 @@ typedef struct{
 EnmOSError_t OS_Init (const OS_ConfigType * ConfigPtr );
 EnmOSError_t OS_DeInit ( void ) ;
 void OS_Run(void);
-EnmOSError_t OS_Create_Task( void (*Ptr) (void) , uint16 Run_Time , Rotation_t Mode ,  Status_t Status ,uint8 Priority );
-//EnmOSError_t OS_Create_Task(const ST_Task_Info *ST_Incoming_Task_Info );
+EnmOSError_t OS_Create_Task(const ST_Task_Info *ST_Incoming_Task_Info );
 EnmOSError_t OS_Delete_Task(const ST_Task_Info * ST_Incoming_Task_Info );
 void CPU_Sleep (void);
 void ISR_Generated_Flag_Setter();
 
-//extern uint8 Buffer_ptr ;
-extern ST_Task_Info Task_Buffer[BUFFER_SIZE];
 
 #endif /* OS_H_ */
