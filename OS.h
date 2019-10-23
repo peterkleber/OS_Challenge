@@ -2,7 +2,7 @@
  * OS.h
  *
  *  Created on: Oct 22, 2019
- *      Author: PeterKleber
+ *        Author: PeterKleber & Ahmed Ehab
  */
 
 #ifndef OS_H_
@@ -12,7 +12,7 @@
 #include"std_types.h"
 #include "Timer.h"
 #include "OS_cnfg.h"
-//#include "LCD.h"
+
 
 
 #define BUFFER_SIZE ((uint8)3)

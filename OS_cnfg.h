@@ -2,7 +2,7 @@
  * OS_cnfg.h
  *
  *  Created on: Oct 22, 2019
- *      Author: PeterKleber
+ *       Author: PeterKleber & Ahmed Ehab
  */
 
 #ifndef OS_CNFG_H_

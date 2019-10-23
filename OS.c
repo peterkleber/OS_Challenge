@@ -198,7 +198,6 @@ EnmOSError_t OS_Delete_Task(const ST_Task_Info *ST_Incoming_Task_Info)
 			{
 
 				if ((ST_Incoming_Task_Info->Ptr == Task_Buffer[i].Ptr)) { //Search for the function in the buffer
-					//		TMU_Buffer[i].Status = NOT_Active; //if it exist change it's state to not active
 					Task_Buffer[i].Status = Deleted;
 					//Overwrite the not active element with the last active one
 					if (Buffer_ptr > 1)
