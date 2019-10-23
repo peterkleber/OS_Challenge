@@ -34,13 +34,6 @@ typedef struct{
 	uint8 Priority; //0 is the max priority
 }ST_Task_Info;
 
-/*EnmTMUError_t TMU_Init(const TMU_ConfigType *ConfigPtr);
-EnmTMUError_t TMU_Start_Timer(uint16 Time_Delay, void (*Ptr)(void), Rotation_t mode);
-EnmTMUError_t TMU_Stop_Timer(void (*Ptr)(void));
-EnmTMUError_t TMU_Dispatch();
-EnmTMUError_t TMU_DeInit(void);
-*/
-
 EnmOSError_t OS_Init (const OS_ConfigType * ConfigPtr );
 EnmOSError_t OS_DeInit ( void ) ;
 void OS_Run(void);
@@ -50,5 +43,6 @@ void CPU_Sleep (void);
 void ISR_Generated_Flag_Setter();
 
 //extern uint8 Buffer_ptr ;
+extern ST_Task_Info Task_Buffer[BUFFER_SIZE];
 
 #endif /* OS_H_ */

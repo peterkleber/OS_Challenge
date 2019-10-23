@@ -15,25 +15,35 @@ volatile uint16 OS_Tick_Count = 0;
 volatile uint8 ISR_Generated_Flag = 0;
 static uint8 System_Tick_Count = 0 ;
 static sint16 Max_Run_Time = -1;
+static uint8 Timer_Select ;	//any value except 0,1,2
 
- ST_Task_Info Task_Buffer[BUFFER_SIZE];
+
 
 //Call back function for the ISR to set the flag
-void ISR_Generated_Flag_Setter() {
+void ISR_Generated_Flag_Setter() 
+{ 
+	 
 	ISR_Generated_Flag = 1;
 }
 
+
 void CPU_Sleep (void)
 {
+	  
 		MCUCR |= (1<<SE);
 
 }
 
-EnmOSError_t OS_Init(const OS_ConfigType *ConfigPtr) {
-	if (OS_init_flag == 0) {
-		if (ConfigPtr != NULL_PTR) {
+EnmOSError_t OS_Init(const OS_ConfigType *ConfigPtr) 
+{
+	Timer_Select = ConfigPtr->timer;
+	if (OS_init_flag == 0) 
+	{
+		if (ConfigPtr != NULL_PTR) 
+		{
 			//Initialize the buffer
-			for (uint8 i = 0; i < BUFFER_SIZE; i++) {
+			for (uint8 i = 0; i < BUFFER_SIZE; i++) 
+			{
 				Task_Buffer[i].Ptr = NULL_PTR;
 				Task_Buffer[i].Run_Time = 0;
 				Task_Buffer[i].Mode = NO_MODE;     //Outside the enum values
@@ -41,29 +51,34 @@ EnmOSError_t OS_Init(const OS_ConfigType *ConfigPtr) {
 				Task_Buffer[i].Priority = (uint8)255;
 			}
 
-			TIMER_ID_init(ConfigPtr->timer);
+			TIMER_ID_init(Timer_Select);
 			//send callback function
-			if ((ConfigPtr->timer) == TIMER_0) {
-				Timer0_Set_Callback(ISR_Generated_Flag_Setter);
-			} else if ((ConfigPtr->timer) == TIMER_1) {
-				Timer1_Set_Callback(ISR_Generated_Flag_Setter);
-			} else if ((ConfigPtr->timer) == TIMER_2) {
-				Timer2_Set_Callback(ISR_Generated_Flag_Setter);
+			if ((ConfigPtr->timer) == TIMER_0) 
+			{
+				Timer0_COMP_Set_Callback(ISR_Generated_Flag_Setter);
+			} else if ((ConfigPtr->timer) == TIMER_1) 
+			{
+				Timer1_COMP_Set_Callback(ISR_Generated_Flag_Setter);
+			} else if ((ConfigPtr->timer) == TIMER_2) 
+			{
+				Timer2_COMP_Set_Callback(ISR_Generated_Flag_Setter);
 			}
 
-			Time_Delay((ConfigPtr->timer), 1, ms);
-	//		TIMER_Start(ConfigPtr->timer);
-
+			Time_Delay(Timer_Select,1, ms);		
 			OS_init_flag = 1;
 		}
 	}
+	TIMER_Start(Timer_Select);
 	return OS_OK;
 }
 
-EnmOSError_t OS_DeInit ( void ) {
-	if (OS_init_flag == 1) {
+EnmOSError_t OS_DeInit ( void ) 
+{
+	if (OS_init_flag == 1) 
+	{
 				//Clear the Buffer
-				for (uint8 i = 0; i < Buffer_ptr; i++) {
+				for (uint8 i = 0; i < Buffer_ptr; i++) 
+				{
 					Task_Buffer[i].Ptr = NULL_PTR;
 					Task_Buffer[i].Run_Time = 0;
 					Task_Buffer[i].Mode = NO_MODE; //Outside the enum values
@@ -76,110 +91,137 @@ EnmOSError_t OS_DeInit ( void ) {
 				OS_init_flag = 0;
 
 				return OS_OK;
-			} else {
+			} 
+			else 
+			{
 				return OS_NOK;
 			}
 	return OS_OK;
 }
 
 
-void OS_Run(void) {
 
-	while(1)
-	{
+void OS_Run(void) 
+{
+	
+while(1)
+{
 	static uint8 Min_Priority_Index = (uint8) 255;
 
-	if (OS_init_flag == 1) {
-		if (ISR_Generated_Flag == 1) {
-
+	if (OS_init_flag == 1) 
+	{	
+		PORTD ^= (1<<PD0);
+		
+		if (ISR_Generated_Flag == 1) 
+		{
+			PORTD ^= (1<<PD1);
+			
 			System_Tick_Count++; //when an ISR happens increment the tick counter
 
-			for (uint8 i = 0; i < Buffer_ptr; i++) {
+			for (uint8 i = 0; i < Buffer_ptr; i++) 
+			{
+				
+				if (System_Tick_Count == Task_Buffer[i].Run_Time) 
+				{
+					PORTD ^= (1<<PD2);
 
-				if (System_Tick_Count == Task_Buffer[i].Run_Time) {
-					if (Task_Buffer[i].Ptr != NULL_PTR) {
-						if (Task_Buffer[i].Status == Ready) {
-							if (Min_Priority_Index > Task_Buffer[i].Priority) {
+					if (Task_Buffer[i].Ptr != NULL_PTR) 
+					{	
+						PORTD ^= (1<<PD3);
+						
+						if (Task_Buffer[i].Status == Ready) 
+						{
+							PORTD ^= (1<<PD4);
+							if (Min_Priority_Index > Task_Buffer[i].Priority) 
+							{	
+								PORTD ^= (1<<PD5);
 								Min_Priority_Index = i;
 							}
 						}
+					
+
+						void (*Ptr_to_excute)(void) = Task_Buffer[Min_Priority_Index].Ptr;
+					
+						Ptr_to_excute();
+
+						Task_Buffer[Min_Priority_Index].Status = Running;
+
+						if (Task_Buffer[Min_Priority_Index].Mode == ONE_SHOT)
+						{
+						
+							if (Buffer_ptr > 1)
+							{
+								Task_Buffer[Min_Priority_Index].Ptr =Task_Buffer[Buffer_ptr - 1].Ptr;
+								Task_Buffer[Min_Priority_Index].Mode =Task_Buffer[Buffer_ptr - 1].Mode;
+								Task_Buffer[Min_Priority_Index].Run_Time = Task_Buffer[Buffer_ptr- 1].Run_Time;
+								Task_Buffer[Min_Priority_Index].Status = Task_Buffer[Buffer_ptr- 1].Status;
+
+								Buffer_ptr--;
+							}
+						}
+			
 					}
-				}
-
 			}
-
-			void (*Ptr_to_excute)(void) = Task_Buffer[Min_Priority_Index].Ptr;
-
-            Ptr_to_excute();
-
-            Task_Buffer[Min_Priority_Index].Status = Running;
-
-			if (Task_Buffer[Min_Priority_Index].Mode == ONE_SHOT) {
-
-				if (Buffer_ptr > 1) {
-
-					Task_Buffer[Min_Priority_Index].Ptr =Task_Buffer[Buffer_ptr - 1].Ptr;
-					Task_Buffer[Min_Priority_Index].Mode =Task_Buffer[Buffer_ptr - 1].Mode;
-					Task_Buffer[Min_Priority_Index].Run_Time = Task_Buffer[Buffer_ptr- 1].Run_Time;
-					Task_Buffer[Min_Priority_Index].Status = Task_Buffer[Buffer_ptr- 1].Status;
-
-					Buffer_ptr--;
-				}
-
 
 		}
 			ISR_Generated_Flag = 0;
 	}
 }
-}
-
 	// CPU_SLeep_Function Should be here
-	 CPU_Sleep ();
+	CPU_Sleep ();
+}
 
 }
 
 EnmOSError_t OS_Create_Task(const ST_Task_Info *ST_Incoming_Task_Info)
 {
-
-if (OS_init_flag == 1) {
-	if (Task_Buffer->Ptr != NULL_PTR) {
-
-		if(Max_Run_Time < Task_Buffer[Buffer_ptr].Run_Time)
+	if (OS_init_flag == 1) 
+	{
+		
+		if (Task_Buffer->Ptr == NULL_PTR) 
 		{
-			Max_Run_Time = Task_Buffer[Buffer_ptr].Run_Time;
+			if(Max_Run_Time < Task_Buffer[Buffer_ptr].Run_Time)
+			{
+			
+				Max_Run_Time = Task_Buffer[Buffer_ptr].Run_Time;
+			}
+		
+			if (Buffer_ptr < BUFFER_SIZE) 
+			{
+				
+				Task_Buffer[Buffer_ptr].Ptr = ST_Incoming_Task_Info->Ptr;
+				Task_Buffer[Buffer_ptr].Mode = ST_Incoming_Task_Info->Mode;
+				Task_Buffer[Buffer_ptr].Run_Time = ST_Incoming_Task_Info->Run_Time;
+				Task_Buffer[Buffer_ptr].Status = Ready;
+				Task_Buffer[Buffer_ptr].Priority = ST_Incoming_Task_Info->Priority;
+
+				Buffer_ptr++;
+			}
+
 		}
 
-		if (Buffer_ptr < BUFFER_SIZE) {
-			Task_Buffer[Buffer_ptr].Ptr = ST_Incoming_Task_Info->Ptr;
-			Task_Buffer[Buffer_ptr].Mode = ST_Incoming_Task_Info->Mode;
-			Task_Buffer[Buffer_ptr].Run_Time = ST_Incoming_Task_Info->Run_Time;
-			Task_Buffer[Buffer_ptr].Status = Ready;
-			Task_Buffer[Buffer_ptr].Priority = ST_Incoming_Task_Info->Priority;
-
-			Buffer_ptr++;
-		}
 
 	}
-
-
-}
-return OS_OK;
+	return OS_OK;
 
 }
 
-EnmOSError_t OS_Delete_Task(const ST_Task_Info *ST_Incoming_Task_Info) {
-if (OS_init_flag == 1) {
+EnmOSError_t OS_Delete_Task(const ST_Task_Info *ST_Incoming_Task_Info) 
+{
+if (OS_init_flag == 1) 
+{
 
-	if (ST_Incoming_Task_Info->Ptr != NULL_PTR) {
-
-		for (uint8 i = 0; i < Buffer_ptr; i++) {
+	if (ST_Incoming_Task_Info->Ptr != NULL_PTR) 
+	{
+		for (uint8 i = 0; i < Buffer_ptr; i++) 
+		{
 
 			if ((ST_Incoming_Task_Info->Ptr == Task_Buffer[i].Ptr)) { //Search for the function in the buffer
 				//		TMU_Buffer[i].Status = NOT_Active; //if it exist change it's state to not active
 				Task_Buffer[i].Status = DELETED;
 				//Overwrite the not active element with the last active one
-				if (Buffer_ptr > 1) {
-
+				if (Buffer_ptr > 1) 
+				{
 					Task_Buffer[i].Ptr = Task_Buffer[Buffer_ptr - 1].Ptr;
 					Task_Buffer[i].Mode = Task_Buffer[Buffer_ptr - 1].Mode;
 					Task_Buffer[i].Run_Time =Task_Buffer[Buffer_ptr - 1].Run_Time;
@@ -188,20 +230,21 @@ if (OS_init_flag == 1) {
 
 					Buffer_ptr--;
 				}
-
 			}
 		}
 
 		for (uint8 i = 0; i < Buffer_ptr; i++)
 		{
-		if (Max_Run_Time < Task_Buffer[i].Run_Time) {
-			Max_Run_Time = Task_Buffer[i].Run_Time;
-			}
+			if (Max_Run_Time < Task_Buffer[i].Run_Time) 
+				{
+				Max_Run_Time = Task_Buffer[i].Run_Time;
+				}
 		}
 
-		if (System_Tick_Count >= Max_Run_Time) {
+		if (System_Tick_Count >= Max_Run_Time) 
+		{
 			System_Tick_Count = 0;
-			}
+		}
 	}
 }
 return OS_OK;

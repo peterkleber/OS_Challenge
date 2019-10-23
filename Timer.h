@@ -2,7 +2,7 @@
  * TIMER.h
  *
  *  Created on: Sep 24, 2019
- *      Author: Mohammed
+ *      Author: HOBA
  */
 
 #ifndef TIMER_H_
@@ -10,6 +10,7 @@
 
 #include "TIMER_cnfg.h"
 #include <avr/interrupt.h>
+
 
 #ifndef F_CPU
 #define F_CPU   8000000ul
@@ -45,24 +46,36 @@ ACK TIMER_Stop (TIMER_t );
 ACK Enable_Timer_Interrupt (TIMER_t );
 void timer2_delay_ms(uint32 delay_value);
 ACK PWM_Channel_generate( TIMER_t TIMER_Select , Channel_t Channel_Select , float Required_duty_cycle , uint8 type );
-
+ACK TIMER_Set_Mode ( TIMER_t TIMER_Select  , TIMER_mode_t Timer_mode );
+ACK TIMER_Set_Prescalar ( TIMER_t TIMER_Select  , prescaler_factor_t Prescaler_factor );
 
 void Timer0_Interrupt_Handling (void);
 void Timer1_Interrupt_Handling (void);
 void Timer2_Interrupt_Handling (void);
 
-void Timer0_Set_Callback ( void (*ptr)(void) );
-void Timer1_Set_Callback ( void (*ptr)(void) );
-void Timer2_Set_Callback ( void (*ptr)(void) );
+void Timer0_OVF_Set_Callback ( void (*ptr)(void) );
+void Timer1_OVF_Set_Callback ( void (*ptr)(void) );
+void Timer2_OVF_Set_Callback ( void (*ptr)(void) );
 
-//----------------- Extern Global Variables -------------------------//
- extern  void (*g_callBackPtr0)(void)  ;
- extern  void (*g_callBackPtr1)(void) ;
- extern  void (*g_callBackPtr2)(void)  ;
- 
+
+void Timer0_COMP_Set_Callback ( void (*ptr)(void) );
+void Timer1_COMP_Set_Callback ( void (*ptr)(void) );
+void Timer2_COMP_Set_Callback ( void (*ptr)(void) );
+
+//-------------------  Public_Global_Pointer_to_function Variables -------------------------------//
+extern void (*g_callBackPtr0_OVF)(void)   ;
+extern void (*g_callBackPtr1_OVF)(void)   ;
+extern void (*g_callBackPtr2_OVF)(void)   ;
+
+extern void (*g_callBackPtr0_COMP)(void)  ;
+extern void (*g_callBackPtr1_COMP)(void)  ;
+extern void (*g_callBackPtr2_COMP)(void)  ;
+
+//-------------------------------------------------------------------------------------------------//
 
 extern uint32 OVF_Counter_Loop[MAX_NUM_OF_TIMERS] ;
 extern uint8 Running_Flag[MAX_NUM_OF_TIMERS];		//this Flag is used when your Delay occured by using Interrupt so as to run your operation which needs that delay
-extern uint8 PWM_Value;
 
+
+extern uint8 PWM_Value;
 #endif /* TIMER_H_ */

@@ -27,11 +27,16 @@ uint32 OVF_Counter_Loop[MAX_NUM_OF_TIMERS]={1,1,1} ;
 uint8 Running_Flag[MAX_NUM_OF_TIMERS]={0,0,0};		//this Flag is used when your Delay occured by using Interrupt so as to run your operation which needs that delay
 uint8 PWM_Value;
 
+
 //-------------------  Public_Global_Pointer_to_function Variables -------------------------------//
-  void (*g_callBackPtr0)(void) = NULL_POINTER ;
-  void (*g_callBackPtr1)(void) = NULL_POINTER ;
-  void (*g_callBackPtr2)(void) = NULL_POINTER ;
-  
+void (*g_callBackPtr0_OVF)(void) = NULL_POINTER ;
+void (*g_callBackPtr1_OVF)(void) = NULL_POINTER ;
+void (*g_callBackPtr2_OVF)(void) = NULL_POINTER ;
+
+void (*g_callBackPtr0_COMP)(void) = NULL_POINTER ;
+void (*g_callBackPtr1_COMP)(void) = NULL_POINTER ;
+void (*g_callBackPtr2_COMP)(void) = NULL_POINTER ;
+
 /**************************** TIMER DRIVER ****************************/
 
 
@@ -170,7 +175,7 @@ ACK TIMER_init(void)
 						case PWM_MODE:
 						{
 							DDR_TIMER_0 |= (1<<OC0);
-							
+
 							switch (TIMER_cnfg_arr[loop_index].COM_mode)
 							{
 								// INVERTING
@@ -311,7 +316,7 @@ ACK TIMER_init(void)
 
 						case PHASE_CORRECT_MODE:
 						{
-							
+
 							Flag_mode[loop_index]=PWM_MODE;
 							PWM_PHASE_CORRECT_8_BIT();
 							break;
@@ -385,14 +390,14 @@ ACK TIMER_init(void)
 								{
 										COM_1A_PWM_NON_INVERTED();
 										COM_1B_PWM_NON_INVERTED();
-							
+
 									break;
 								}
 
 								case INVERTING:
 								{
 										COM_1A_PWM_INVERTED();
-										COM_1B_PWM_INVERTED();	
+										COM_1B_PWM_INVERTED();
 									break;
 								}
 
@@ -427,7 +432,7 @@ ACK TIMER_init(void)
 							ENABLE_GLOBAL_INTERRUPT;      //Enable_Global_Interrupt
 							switch(TIMER_cnfg_arr[loop_index].WGM_mode)		//check what's WGM
 							{
-								case NORMAL:
+								case NORMAL_MODE:
 								{
 									ENABLE_TOIE1;
 									break;
@@ -451,8 +456,8 @@ ACK TIMER_init(void)
 
 						case NO_INTERRUPT:
 						{
-							
-							
+
+
 							TIMSK &= ~(1<<TOIE1) ;
 							TIMSK &= ~(1<<TICIE1) ;
 							TIMSK &= ~(1<<TOV1) ;
@@ -485,8 +490,8 @@ ACK TIMER_init(void)
 
 						case NO_ICU_USED:
 						{
-							
-							
+
+
 							break;
 						}
 
@@ -508,7 +513,7 @@ ACK TIMER_init(void)
 				/**************************** START OF TIMER 2 ****************************/
 				case TIMER2:
 				{
-					
+
 					TCNT2 = 0; //timer initial value
 					switch (TIMER_cnfg_arr[loop_index].WGM_mode)
 					{
@@ -517,7 +522,7 @@ ACK TIMER_init(void)
 
 						case NORMAL_MODE:
 						{
-							
+
 							Flag_mode[loop_index] = NON_PWM_MODE;
 							/*********** NORMAL_MODE *********/
 							TCCR2 &=  ~ (1u<<WGM21) ;	// NORMAL_MODE WGM21=0 & WGM20=0
@@ -556,7 +561,7 @@ ACK TIMER_init(void)
 							TCCR2 |= (1u << WGM20);  // PHASE CORRECT MODE  WGM20=1
 							DDRB |= (1u<<PD7);  // OC2 PIN OUTPUT
 							// END OF FAST_PWM_MODE
-							
+
 							break;
 						}
 
@@ -582,8 +587,8 @@ ACK TIMER_init(void)
 
 								// NORMAL_OPERATION_COM_MODE
 								case NORMAL_OPERATION:
-								{	
-									
+								{
+
 									TCCR2 &=  ~ (1u<<COM21);// NORMAL COM21=0 & COM20=0
 									TCCR2 &=  ~ (1u<<COM20); 	// NORMAL COM21=0 & COM20=0
 									break;
@@ -592,7 +597,7 @@ ACK TIMER_init(void)
 								// TOGGLE
 								case TOGGLE_OPERATION:
 								{
-								
+
 									TCCR2 &=  ~(1u<<COM21) ; // TOGGLE COM21=0
 									TCCR2 |=  (1u<<COM20);  // TOGGLE  COM20=1
 									break;
@@ -626,7 +631,7 @@ ACK TIMER_init(void)
 						case PWM_MODE:
 						{
 							DDR_TIMER_2 |= (1<<OC2);
-							
+
 							switch (TIMER_cnfg_arr[loop_index].COM_mode)
 							{
 
@@ -642,7 +647,7 @@ ACK TIMER_init(void)
 								// NON_INVERTING
 								case NON_INVERTING:
 								{
-									
+
 									TCCR2 |= ((1u << COM21) | (1u << COM20)); // NON_INVERTING COM21=1 & COM20=1
 									break;
 								}
@@ -708,7 +713,7 @@ ACK TIMER_init(void)
 						// NO INTERRUPT
 						case NO_INTERRUPT:
 						{
-						
+
 							TIMSK &= (~ ( (1u<<OCIE2) | (1u<<TOIE2) ) );  //Overflow Interrupt & Output Compare Match Interrupt disable
 							break;
 						}
@@ -731,10 +736,10 @@ ACK TIMER_init(void)
 						/*********** ICU MODE *********/
 						case NA:
 						{
-						
+
 							break;
 						}
-						
+
 						default:
 						{
 							TIMER_cnfg_arr[loop_index].IS_init = NOT_INITIALIZED;
@@ -782,14 +787,14 @@ ACK TIMER_ID_init( TIMER_t TIMER_Select )
 		/**************************** START OF TIMER0 ****************************/
 		case TIMER0:
 		{
-		
+
 			TCNT0 = 0; //timer initial value
 			/**************************** WGM MODE TIMER0 ****************************/
 			switch (TIMER_cnfg_arr[TIMER_Select].WGM_mode)
 			{
 				case NORMAL_MODE:
 				{
-				
+
 					Flag_mode[TIMER_Select]= NON_PWM_MODE;
 					/*********** NORMAL_MODE TIMER0 ********/
 					TCCR0 &=  ~ ( (1u<<WGM01) | (1u<<WGM00) );	// NORMAL_MODE WGM01=0 & WGM00=0
@@ -850,7 +855,7 @@ ACK TIMER_ID_init( TIMER_t TIMER_Select )
 						// NORMAL_OPERATION_COM_MODE
 						case NORMAL_OPERATION:
 						{
-						
+
 							TCCR0 &= ~((1u << COM01) | (1u << COM00));// NORMAL COM01=0 & COM00=0
 							break;
 						}
@@ -934,15 +939,15 @@ ACK TIMER_ID_init( TIMER_t TIMER_Select )
 					{
 						case NORMAL_MODE:
 						{
-						
+
 							TIMSK |= (1u<<TOIE0); //Overflow Interrupt Enable
 							break;
 
 						}
 						case CTC_MODE:
 						{
-							
-							
+
+
 							TIMSK |= (1u<<OCIE0); // Output Compare Match Interrupt Enable
 							break;
 						}
@@ -982,7 +987,7 @@ ACK TIMER_ID_init( TIMER_t TIMER_Select )
 				/*********** ICU MODE *********/
 				case NA:
 				{
-				
+
 					break;
 				}
 				default:
@@ -1067,7 +1072,7 @@ ACK TIMER_ID_init( TIMER_t TIMER_Select )
 
 						case TOGGLE_OPERATION:
 						{
-
+						
 							COM_1A_TOGGLE();
 							break;
 						}
@@ -1152,7 +1157,7 @@ ACK TIMER_ID_init( TIMER_t TIMER_Select )
 					ENABLE_GLOBAL_INTERRUPT;      //Enable_Global_Interrupt
 					switch(TIMER_cnfg_arr[TIMER_Select].WGM_mode)		//check what's WGM
 					{
-						case NORMAL:
+						case NORMAL_MODE:
 						{
 							ENABLE_TOIE1;
 							break;
@@ -1242,7 +1247,7 @@ ACK TIMER_ID_init( TIMER_t TIMER_Select )
 
 				case NORMAL_MODE:
 				{
-				
+
 					Flag_mode[TIMER_Select] = NON_PWM_MODE;
 					/*********** NORMAL_MODE *********/
 					TCCR2 &=  ~ (1u<<WGM21) ;	// NORMAL_MODE WGM21=0 & WGM20=0
@@ -1317,7 +1322,7 @@ ACK TIMER_ID_init( TIMER_t TIMER_Select )
 						// TOGGLE
 						case TOGGLE_OPERATION:
 						{
-							
+
 							TCCR2 &=  ~(1u<<COM21) ; // TOGGLE COM21=0
 							TCCR2 |=  (1u<<COM20);  // TOGGLE  COM20=1
 							break;
@@ -1433,7 +1438,7 @@ ACK TIMER_ID_init( TIMER_t TIMER_Select )
 				// NO INTERRUPT
 				case NO_INTERRUPT:
 				{
-				
+
 					TIMSK &= (~ ( (1u<<OCIE2) | (1u<<TOIE2) ) );  //Overflow Interrupt & Output Compare Match Interrupt disable
 					break;
 				}
@@ -1499,17 +1504,17 @@ ACK Time_Delay ( TIMER_t TIMER_Select , double Required_Delay , Delay_unit_t Del
 
 	uint32 Integer_Number;
 	uint32 Float_Number;
-	
+
 	if (TIMER_cnfg_arr[TIMER_Select].IS_init == INITIALIZED)
 	{
-		
+
 		Calculate_OCR_Value (TIMER_Select,  Required_Delay , Delay_unit);
 		Controlling_Flag=1;
 	}
 
 	else
 	{
-			
+
 		STATE = NAK;
 		return STATE;
 	}
@@ -1520,15 +1525,15 @@ ACK Time_Delay ( TIMER_t TIMER_Select , double Required_Delay , Delay_unit_t Del
 	{
 		if( ( (OCR_Value[TIMER_Select]) > 255 ) )
 		{
-			
-			
+
+
 			TIMER_cnfg_arr[TIMER_Select].WGM_mode = NORMAL_MODE;		//Force the WGM_mode to be configured as NORMAL_MODE
-			
+
 			OVF_Counter_Loop[TIMER_Select] = (uint16) OCR_Value[TIMER_Select]/255;
-			
+
 			Integer_Number = (uint32)OCR_Value[TIMER_Select];
 			Float_Number = (uint32)( (OCR_Value[TIMER_Select] - Integer_Number) *10 ) ;
-			
+
 			if(Float_Number >= 5)
 			{
 				OVF_Counter_Loop[TIMER_Select]++;
@@ -1538,7 +1543,7 @@ ACK Time_Delay ( TIMER_t TIMER_Select , double Required_Delay , Delay_unit_t Del
 			// we can use the interrupt on Overflow Flag by the number of OVF_Counter_loop till is finished
 			if(TIMER_cnfg_arr[TIMER_Select].interrupt == INTERRUPT)
 			{
-				
+
 				STATE=Enable_Timer_Interrupt(TIMER_Select);
 				STATE = TIMER_Start(TIMER_Select );
 
@@ -1547,7 +1552,7 @@ ACK Time_Delay ( TIMER_t TIMER_Select , double Required_Delay , Delay_unit_t Del
 			// we can use the polling on Overflow Flag till the OVF_Counter_loop is finished
 			else if(TIMER_cnfg_arr[TIMER_Select].interrupt == NO_INTERRUPT)
 			{
-				
+
 				STATE = Polling_Delay (TIMER_Select );
 			}
 
@@ -1570,12 +1575,12 @@ ACK Time_Delay ( TIMER_t TIMER_Select , double Required_Delay , Delay_unit_t Del
 
 		Integer_Number = (uint32)OCR_Value[TIMER_Select];
 		Float_Number = (uint32)( (OCR_Value[TIMER_Select] - Integer_Number) *10 ) ;
-		
+
 		if(Float_Number >= 5)
 		{
 			OVF_Counter_Loop[TIMER_Select]++;
 		}
-		
+
 		// we can use the interrupt on Overflow Flag by the number of OVF_Counter_loop till is finished
 		if(TIMER_cnfg_arr[TIMER_Select].interrupt == INTERRUPT)
 		{
@@ -1608,7 +1613,7 @@ ACK Time_Delay ( TIMER_t TIMER_Select , double Required_Delay , Delay_unit_t Del
 	else if ( (TIMER_cnfg_arr[TIMER_Select].WGM_mode == NORMAL_MODE) )
 
 	{
-		
+
 		STATE= Update_Timer_TCNT_Register(TIMER_Select,Required_Delay,Delay_unit);
 	}
 
@@ -1630,8 +1635,8 @@ void Calculate_OCR_Value (TIMER_t TIMER_Select, double Required_Delay , Delay_un
 
 	Frequency_of_Timer[TIMER_Select] =   (F_CPU / Prescalar_Factor[TIMER_cnfg_arr[TIMER_Select].prescalar]) ;
 	OCR_Value[TIMER_Select] =  Required_Delay * Frequency_of_Timer[TIMER_Select] ;
-	
-	
+
+
 	switch (Delay_unit)
 	{
 		case SECOND:
@@ -1642,10 +1647,10 @@ void Calculate_OCR_Value (TIMER_t TIMER_Select, double Required_Delay , Delay_un
 
 		case MILLISECOND:
 		{
-		
-		
+
+			
 			OCR_Value[TIMER_Select] = OCR_Value[TIMER_Select]/1000;
-	
+				
 			break;
 		}
 
@@ -1685,11 +1690,11 @@ ACK Update_Timer_TCNT_Register (TIMER_t TIMER_Select, double Required_Delay , De
 		{
 			case TIMER0:
 			{
-				
+
 				TCNT0=0;	//CLEAR_TIMER0_TCNT_Register
 				Preloaded_Value[TIMER_Select] = 255 - (OCR_Value[TIMER_Select]);
 				TCNT0 = (uint8) Preloaded_Value[TIMER_Select];
-	
+
 
 				break;
 			}
@@ -1745,7 +1750,7 @@ ACK Polling_Delay (TIMER_t TIMER_Select) //Private Function
 		 {
 			 case TIMER0:
 			 {
-				
+
 				 STATE = TIMER_Start(TIMER0 );
 				for(i=0; i<OVF_Counter_Loop[TIMER_Select];i++)
 				{
@@ -1761,28 +1766,28 @@ ACK Polling_Delay (TIMER_t TIMER_Select) //Private Function
 				 STATE = TIMER_Start(TIMER1 );
 				 	for(i=0;i<OVF_Counter_Loop[TIMER1];i++)
 				 {
-					
+
 					 TCNT1= (uint16) Preloaded_Value[TIMER1];
 					 while ( (TIFR & (1<<TOV1) ) == 0 );
 					 { TIFR |= 1<<TOV1 ;}
 
 				 }
-				 
+
 				 break;
 			 }
 
 			 case TIMER2:
 			 {
-				
+
 				 STATE = TIMER_Start(TIMER2 );
-				 
+
 				for(i=0;i<OVF_Counter_Loop[TIMER2];i++)
 				 {
 					 TCNT2= (uint8) Preloaded_Value[TIMER2];
 					 while ( (TIFR & (1<<TOV2) ) == 0 );
 					  TIFR |= 1<<TOV2 ;
-				
-					 
+
+
 				 }
 
 				 break;
@@ -1842,7 +1847,7 @@ ACK Polling_Delay (TIMER_t TIMER_Select) //Private Function
 	 }
 
  return STATE;
- 
+
  }
 
 
@@ -1869,7 +1874,7 @@ ACK TIMER_Start ( TIMER_t TIMER_Select )
 
 						 case PRESCALER8:
 						 {
-						
+
 							 TCCR0 |= (0b00000010);
 							 break;
 						 }
@@ -1951,7 +1956,7 @@ ACK TIMER_Start ( TIMER_t TIMER_Select )
 
 						 case PRESCALER1024:
 						 {
-	
+
 							 TIMER1_PRESCALAR_1024();
 							 break;
 						 }
@@ -1995,7 +2000,7 @@ ACK TIMER_Start ( TIMER_t TIMER_Select )
 
 						 case PRESCALER8:
 						 {
-							
+
 							 TCCR2 |= (0b00000010);
 							 break;
 						 }
@@ -2014,8 +2019,8 @@ ACK TIMER_Start ( TIMER_t TIMER_Select )
 
 						 case PRESCALER128:
 						 {
-							
-							  
+
+
 							 TCCR2 |= (0b00000101);
 							 break;
 						 }
@@ -2028,7 +2033,7 @@ ACK TIMER_Start ( TIMER_t TIMER_Select )
 
 						 case PRESCALER1024:
 						 {
-							 
+
 							 TCCR2 |= (0b00000111);
 							 break;
 						 }
@@ -2067,7 +2072,7 @@ ACK TIMER_Start ( TIMER_t TIMER_Select )
 
 ACK PWM_generate( TIMER_t TIMER_Select , float Required_duty_cycle , uint8 type )
  {
-	
+
 	 ACK STATE = AK ;
 	 uint16 Top;
 
@@ -2079,25 +2084,25 @@ ACK PWM_generate( TIMER_t TIMER_Select , float Required_duty_cycle , uint8 type 
 			 case TIMER0:
 			 {
 				 OCR0 = (255 * (float)(Required_duty_cycle/100));
-	
+
 				 break;
 			 }
 
 			 case TIMER1:
-			 {	
+			 {
 
 				 Top=255;
-				 
+
 				 OCR1A= (uint16) ( Top * (float)(Required_duty_cycle/100) );
 				 break;
 			 }
 
 			 case TIMER2:
 			 {
-				
+
 				 Top=255;
 				 OCR2 = (Top*(float)(Required_duty_cycle/100));
-		
+
 				 break;
 			 }
 
@@ -2122,17 +2127,17 @@ ACK PWM_generate( TIMER_t TIMER_Select , float Required_duty_cycle , uint8 type 
 						 PWM_Value=0;
 						 //PWM_PORT &= ~(1<<PWM_PIN);
 
-						
+
 					 }
 					 else if(type == NON_INVERTING)
 					 {
 						 PWM_Value=1;
 						// PWM_PORT |= (1<<PWM_PIN);
-						
+
 					 }
 					 break;
 				 }
-				 
+
 
 				 else
 				 {
@@ -2173,7 +2178,7 @@ ACK PWM_Channel_generate( TIMER_t TIMER_Select , Channel_t Channel_Select , floa
 	//-------------------------- For Application Purpose --------------------//
  uint16 Top;
  ACK STATE = AK;
- 
+
  if((TIMER_cnfg_arr[TIMER_Select].timer == TIMER1) && (TIMER_cnfg_arr[TIMER_Select].IS_init==INITIALIZED) )
 	{
 	  switch (Channel_Select)
@@ -2181,27 +2186,27 @@ ACK PWM_Channel_generate( TIMER_t TIMER_Select , Channel_t Channel_Select , floa
 		case CHANNEL_A :
 		{
 			Top=255;
-							 
+
 			OCR1A= (uint16) ( Top * (float)(Required_duty_cycle/100) );
 			break;
 		}
-		
+
 		case CHANNEL_B :
 		{
 			Top=255;
-						
-			OCR1B= (uint16) ( Top * (float)(Required_duty_cycle/100) );
-			break;		
-		}
-				
-		case CHANNEL_A_B :
-		{
-			Top=255;				 
-			OCR1A= (uint16) ( Top * (float)(Required_duty_cycle/100) );			
+
 			OCR1B= (uint16) ( Top * (float)(Required_duty_cycle/100) );
 			break;
 		}
-		
+
+		case CHANNEL_A_B :
+		{
+			Top=255;
+			OCR1A= (uint16) ( Top * (float)(Required_duty_cycle/100) );
+			OCR1B= (uint16) ( Top * (float)(Required_duty_cycle/100) );
+			break;
+		}
+
 		default:
 		{
 			break;
@@ -2221,7 +2226,7 @@ ACK Update_Timer_OCR_Register (TIMER_t TIMER_Select)	//Private Function
 	{
 		case TIMER0:
 		{
-			
+
 			OCR0 = (uint8) OCR_Value[TIMER_Select];
 			break;
 		}
@@ -2286,30 +2291,6 @@ ACK interrupt_PWM (TIMER_t TIMER_Select)  //Private Function
 		}
 
 	}
-	return STATE;
-}
-
-
-ACK interrupt_time_delay (TIMER_t TIMER_Select)
-{
-	ACK STATE =AK;
-	static uint8 Counter=0;
-
-	if ((TIMER_cnfg_arr[TIMER_Select].IS_init == INITIALIZED) && (TIMER_cnfg_arr[TIMER_Select].interrupt == INTERRUPT))
-	{
-		Counter++;
-
-		if(Counter == OVF_Counter_Loop[TIMER_Select])
-		{
-			Running_Flag[TIMER_Select]=1;
-		}
-	}
-
-	else
-	{
-		STATE = NAK;
-	}
-
 	return STATE;
 }
 
@@ -2422,26 +2403,86 @@ ACK Enable_Timer_Interrupt (TIMER_t TIMER_Select)
 	return STATE;
 }
 
-void Timer0_Set_Callback ( void (*ptr)(void) )
+
+
+ACK TIMER_Set_Prescalar ( TIMER_t TIMER_Select  , prescaler_factor_t Prescaler_factor )
 {
-	g_callBackPtr0 = ptr ;
+	ACK STATE = AK ;
+
+	if ( (TIMER_cnfg_arr[TIMER_Select].IS_init==INITIALIZED) )
+	{
+		TIMER_cnfg_arr[TIMER_Select].prescalar = Prescaler_factor ;
+	}
+
+	else
+	{
+		STATE=NAK;
+	}
+
+	return
+	STATE;
 }
 
-void Timer1_Set_Callback ( void (*ptr)(void) )
+
+
+ACK TIMER_Set_Mode ( TIMER_t TIMER_Select  , TIMER_mode_t Timer_mode )
 {
-	g_callBackPtr1 = ptr ;
+	ACK STATE = AK ;
+
+	if ( (TIMER_cnfg_arr[TIMER_Select].IS_init==INITIALIZED) )
+	{
+		TIMER_cnfg_arr[TIMER_Select].WGM_mode = Timer_mode ;
+	}
+
+	else
+	{
+		STATE=NAK;
+	}
+
+	return
+	STATE;
 }
 
-void Timer2_Set_Callback ( void (*ptr)(void) )
+
+
+
+
+
+void Timer0_OVF_Set_Callback ( void (*ptr)(void) )
 {
-	g_callBackPtr2 = ptr ;
+	g_callBackPtr0_OVF = ptr ;
 }
 
+void Timer1_OVF_Set_Callback ( void (*ptr)(void) )
+{
+	g_callBackPtr1_OVF = ptr ;
+}
+
+void Timer2_OVF_Set_Callback ( void (*ptr)(void) )
+{
+	g_callBackPtr2_OVF = ptr ;
+}
+
+
+void Timer0_COMP_Set_Callback ( void (*ptr)(void) )
+{
+	g_callBackPtr0_COMP = ptr ;
+}
+
+void Timer1_COMP_Set_Callback ( void (*ptr)(void) )
+{
+	g_callBackPtr1_COMP = ptr ;
+}
+
+void Timer2_COMP_Set_Callback ( void (*ptr)(void) )
+{
+	g_callBackPtr2_COMP = ptr ;
+}
 
 
 void Timer0_Interrupt_Handling (void)
 {
-	static uint8 Counter=0;
+	static uint16 Counter=0;
 
 	if ( (TIMER_cnfg_arr[TIMER0].IS_init == INITIALIZED) && (TIMER_cnfg_arr[TIMER0].interrupt == INTERRUPT))
 	{
@@ -2450,13 +2491,14 @@ void Timer0_Interrupt_Handling (void)
 		if(Counter == OVF_Counter_Loop[TIMER0])
 		{
 			Running_Flag[TIMER0]=1;
+			Counter=0;
 		}
 	}
 }
 
 void Timer1_Interrupt_Handling (void)
 {
-	static uint8 Counter=0;
+	static uint16 Counter=0;
 
 	if ( (TIMER_cnfg_arr[TIMER1].IS_init == INITIALIZED) && (TIMER_cnfg_arr[TIMER1].interrupt == INTERRUPT))
 	{
@@ -2465,13 +2507,14 @@ void Timer1_Interrupt_Handling (void)
 		if(Counter == OVF_Counter_Loop[TIMER1])
 		{
 			Running_Flag[TIMER1]=1;
+			Counter=0;
 		}
 	}
 }
 
 void Timer2_Interrupt_Handling (void)
 {
-	static uint8 Counter=0;
+	static uint16 Counter=0;
 
 	if ( (TIMER_cnfg_arr[TIMER2].IS_init == INITIALIZED) && (TIMER_cnfg_arr[TIMER2].interrupt == INTERRUPT))
 	{
@@ -2479,9 +2522,14 @@ void Timer2_Interrupt_Handling (void)
 		if(Counter == OVF_Counter_Loop[TIMER2])
 		{
 			Running_Flag[TIMER2]=1;
+			Counter=0;
 		}
 	}
+
+
 }
+
+
 
 
 
@@ -2489,38 +2537,57 @@ void Timer2_Interrupt_Handling (void)
 
 ISR(TIMER0_OVF_vect)
 {
-
+	if (g_callBackPtr0_OVF != NULL_POINTER)
+	{
+		g_callBackPtr0_OVF();
+	}
 	//Update_Timer_TCNT_Register(TIMER0,1,ms);		// uncomment it and update your required time for periodic delay
 }
 
 
 ISR(TIMER0_COMP_vect)
 {
-	
+	if (g_callBackPtr0_COMP != NULL_POINTER)
+	{
+		g_callBackPtr0_COMP();
+	}
 }
 
 
 
 ISR(TIMER1_OVF_vect)
 {
+	if (g_callBackPtr1_OVF != NULL_POINTER)
+	{
+		g_callBackPtr1_OVF();
+	}
 	//Update_Timer_TCNT_Register(TIMER1,1,ms); // uncomment it and update your required time for periodic delay
 }
 
 ISR(TIMER1_COMPA_vect)
 {
-	 g_callBackPtr1();
-	 PORTB ^= (1<<PB6);
-
+	if (g_callBackPtr1_COMP != NULL_POINTER)
+	{
+		g_callBackPtr1_COMP();
+	}
 }
+
 
 
 ISR(TIMER2_OVF_vect)
 {
-
+	if (g_callBackPtr2_OVF != NULL_POINTER)
+	{
+		g_callBackPtr2_OVF();
+	}
 	//Update_Timer_TCNT_Register(TIMER2,1,ms); // uncomment it and update your required time for periodic delay
 }
 
 ISR(TIMER2_COMP_vect)
 {
 
+	if (g_callBackPtr2_COMP != NULL_POINTER)
+	{
+		g_callBackPtr2_COMP();
+	}
 }

@@ -2,7 +2,7 @@
  * TIMER_cnfg.h
  *
  *  Created on: Sep 24, 2019
- *      Author: Mohammed
+ *      Author: HOBA
  */
 
 #ifndef TIMER_CNFG_H_
@@ -65,54 +65,54 @@ typedef enum {Channel_A=10,Channel_B,Channel_A_B}Channel_t; // types
 #define EXTERNAL_CLK_RISING    5
 #define EXTERNAL_CLK_FALLING   6
 
+typedef enum { prescaler1=0, prescaler8=1,prescaler64=2,prescaler256=3,prescaler1024=4,prescaler32 = 7,prescaler128 = 8 } prescaler_factor_t;
+
 /* PRESCALER TIMER 2 */
 #define PRESCALER32             7
 #define PRESCALER128            8
 
 /* WGM MODE */
-#define NORMAL_MODE        0
-#define CTC_MODE           1
-#define FAST_PWM_MODE      2
-#define PHASE_CORRECT_MODE 3
+#define NORMAL_MODE        10
+#define CTC_MODE           11
+#define FAST_PWM_MODE      12
+#define PHASE_CORRECT_MODE 13
 
+typedef enum {NORMAL_mode=10,CTC_mode=11,FAST_PWM_mode=12,PHASE_CORRECT_mode=13  } TIMER_mode_t;
 /* COM MODE */
-#define NORMAL			  0
-#define TOGGLE			  1
-#define CLEAR			  2
-#define SET				  3
+#define NORMAL			  20
+#define TOGGLE			  21
+#define CLEAR			  22
+#define SET				  23
 
 /* Another Naming for COM MODE */
-#define NORMAL_OPERATION  0
-#define TOGGLE_OPERATION  1
-#define CLEAR_OPERATION	  2
-#define SET_OPERATION	  3
+#define NORMAL_OPERATION  20
+#define TOGGLE_OPERATION  21
+#define CLEAR_OPERATION	  22
+#define SET_OPERATION	  23
 
 /* PWM MODE */
-#define INVERTING 	   4
-#define NON_INVERTING  5
+#define INVERTING 	   34
+#define NON_INVERTING  35
 
 /* INTERRUPT */
-#define INTERRUPT     1
-#define NO_INTERRUPT  0
+#define INTERRUPT     41
+#define NO_INTERRUPT  40
+#define POLLING		  40
 
 /* ICU */
-#define ICU_USED     1
-#define NO_ICU_USED  0
+#define ICU_USED     51
+#define NO_ICU_USED  50
 
 
 /* INITIALIZATION	 */
 #define INITIALIZED			1
 #define NOT_INITIALIZED		0
-#define POLLING				0
+
 
 //Flag PWM
-#define PWM_MODE		1
-#define NON_PWM_MODE	0
+#define PWM_MODE		71
+#define NON_PWM_MODE	70
 
-
-/* Flag_mode */
-#define PWM_MODE		1
-#define NON_PWM_MODE	0
 
 /* Enable Interrupt Overflow s */
 #define ENABLE_OVERFLOW_INTERRUPT_TIMER0	TIMSK |= (1<<TOIE0)
