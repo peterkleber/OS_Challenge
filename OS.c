@@ -142,7 +142,8 @@ while(1)
 							}
 								
 						}
-								PORTD ^= (1<<PD7);
+						
+						PORTD ^= (1<<PD7);
 						void (*Ptr_to_excute)(void) = Task_Buffer[Highest_Priority_Index].Ptr;
 						
 						Ptr_to_excute();
@@ -163,12 +164,13 @@ while(1)
 								
 								Buffer_ptr--;
 							}
-						}
+						} //end of the ONE_SHOT Task
 			
-					}
-			}
+					}//end of the NULL_Pointer condition
+			}// end of the comparison between system tick and Run_Time
 
-		}
+		}	// end of the For Loop
+			
 			ISR_Generated_Flag = 0;
 	}
 }
